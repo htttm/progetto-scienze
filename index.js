@@ -1,23 +1,24 @@
-const { createServer } = require('http');
+const http = require('http');
 const { WebSocketServer } = require('ws');
-const { wisp } = require('@clovergaze/wisp-server-node');
+const wisp = require('@clovergaze/wisp-server-node');
 
-const server = createServer((req, res) => {
+// Creiamo un server HTTP standard che risponda su qualsiasi richiesta
+const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Servizio di rete attivo.');
+    res.end('Servizio Wisp attivo.');
 });
 
-const wss = new WebSocketServer({ server });
+// Colleghiamo i WebSocket direttamente al server HTTP principale
+const wss = new WebSocketServer({ noServer: true });
 
-wss.on('connection', (ws, req) => {
-    if (req.url === '/') {
+server.on('upgrade', (request, socket, head) => {
+    wss.handleUpgrade(request, socket, head, (ws) => {
         wisp.handleConnection(ws);
-    } else {
-        ws.close();
-    }
+    });
 });
 
+// Fondamentale per Render: accetta la porta dinamica assegnata o la 8080
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-    console.log(`Server attivo sulla porta ${PORT}`);
+    console.log(`Server in ascolto sulla porta ${PORT}`);
 });
